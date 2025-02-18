@@ -1,0 +1,74 @@
+ добавили <stdio.h> 
+ убрали static для дальнейшей работы переменной внt
+
+ результат работы nm:
+ 1.file1
+ 0000000000000000 D global_var
+                  U printf
+ 0000000000000000 T print_from_file1
+ 0000000000000004 D static_va
+2.file2
+                  U global_var
+                  U printf
+ 0000000000000000 T print_from_file2
+                  U static_va
+ 3.file3
+                  U global_var
+ 0000000000000000 T main
+                  U printf
+                  U print_from_file1
+                  U print_from_file
+ при использовании команды gcc file1.o file2.o main.o -o program не возникло ошибок линковки,
+ тк глобальная переменная не использовалась после импорта
+
+ objdump
+ 1.file1
+ file1.o:     file format elf64-x86-64
+
+SYMBOL TABLE:
+0000000000000000 l    df *ABS*  0000000000000000 file1.c
+0000000000000000 l    d  .text  0000000000000000 .text
+0000000000000000 l    d  .rodata        0000000000000000 .rodata
+0000000000000000 g     O .data  0000000000000004 global_var
+0000000000000004 g     O .data  0000000000000004 static_var
+0000000000000000 g     F .text  0000000000000043 print_from_file1
+0000000000000000         *UND*  0000000000000000 printf
+
+2. file2
+file2.o:     file format elf64-x86-64
+
+SYMBOL TABLE:
+0000000000000000 l    df *ABS*  0000000000000000 file2.c
+0000000000000000 l    d  .text  0000000000000000 .text
+0000000000000000 l    d  .rodata        0000000000000000 .rodata
+0000000000000000 g     F .text  0000000000000043 print_from_file2
+0000000000000000         *UND*  0000000000000000 global_var
+0000000000000000         *UND*  0000000000000000 printf
+0000000000000000         *UND*  0000000000000000 static_var
+
+3.main
+main.o:     file format elf64-x86-64
+
+SYMBOL TABLE:
+0000000000000000 l    df *ABS*  0000000000000000 main.c
+0000000000000000 l    d  .text  0000000000000000 .text
+0000000000000000 l    d  .rodata        0000000000000000 .rodata
+0000000000000000 g     F .text  000000000000003f main
+0000000000000000         *UND*  0000000000000000 global_var
+0000000000000000         *UND*  0000000000000000 printf
+0000000000000000         *UND*  0000000000000000 print_from_file1
+0000000000000000         *UND*  0000000000000000 print_from_file2
+
+при использовании команды strings program, printf() тоже видны
+file1.c -> global_var = %d
+file1.c -> static_var = %d
+file2.c -> global_var = %d
+file2.c -> static_var = %d
+main.c -> global_var = %d
+
+выполнили objdump -x program, часть вывода оттуда:
+program:     file format elf64-x86-64
+program
+architecture: i386:x86-64, flags 0x00000150:
+HAS_SYMS, DYNAMIC, D_PAGED
+start address 0x0000000000001060
